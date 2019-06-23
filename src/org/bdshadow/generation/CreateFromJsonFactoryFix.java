@@ -17,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Iterator;
 import java.util.Set;
 
+import static org.yaml.snakeyaml.nodes.NodeId.anchor;
+
 public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent> {
 
     public CreateFromJsonFactoryFix(@NotNull DartClass dartClass) {
@@ -46,58 +48,72 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
         template.addTextSegment(".fromJson");
         template.addTextSegment("(Map<String, dynamic> json)");
         template.addTextSegment(" {");
-        template.addTextSegment("return ");
-        template.addTextSegment(this.myDartClass.getName());
-        template.addTextSegment("(");
+        template.addTextSegment("if(json==null){");
+        template.addTextSegment("return null;");
+        template.addTextSegment("}");
+//        template.addTextSegment("return ");
+//        template.addTextSegment(this.myDartClass.getName());
+//        template.addTextSegment("(");
 
+        String className=this.myDartClass.getName();
+        String classParamName=className.substring(0,1).toLowerCase()+className.substring(1);
+        String newElementLine=String.format("%s %s = new %s();",className,classParamName,className);
+        template.addTextSegment(newElementLine);
         for (Iterator<DartComponent> iterator = elementsToProcess.iterator(); iterator.hasNext(); ) {
             DartComponent component = iterator.next();
-            template.addTextSegment(component.getName());
-            template.addTextSegment(": ");
-
-
+            String fieldName=component.getName();
+            String param=String.format("%s.%s",classParamName,fieldName);
+            String jsonParam=String.format("json[\"%s\"]",fieldName);
+            String scriptScript="%s = %s;";
+            String normalScript="if(%s is %s){\n%s = %s;\n}else{\n%s = %s.parse(%s);\n}";
+            String boolScript="if(%s is %s){%s = %s;}else{%s = %s.toLowerCase() == 'true';}";
+            String otherType="%s = %s.fromJson(%s);";
             DartReturnType returnType = PsiTreeUtil.getChildOfType(component, DartReturnType.class);
             DartType dartType = PsiTreeUtil.getChildOfType(component, DartType.class);
             String typeText = returnType == null ? DartPresentableUtil.buildTypeText(component, dartType, null) : DartPresentableUtil.buildTypeText(component, returnType, null);
 
             boolean isGenericCollection = typeText.startsWith("Set") || typeText.startsWith("List");
 
+            String nullCheckParam=String.format("if(%s == null){%s=null;}else{",jsonParam,param);
+            template.addTextSegment(nullCheckParam);
+
             if (isGenericCollection) {
-                addCollection(template, component, typeText);
-                template.addTextSegment(",");
+                addCollection(template, component, typeText,param,jsonParam);
+                template.addTextSegment("}");
                 continue;
             }
 
+            String lineScript=null;
             switch (typeText) {
                 case "int":
                 case "double":
                 case "DateTime": {
-                    template.addTextSegment(typeText);
-                    template.addTextSegment(".parse(");
-                    addJsonRetrieval(template, component);
-                    template.addTextSegment(")");
+                    lineScript=String.format(normalScript,jsonParam,typeText,param,jsonParam,param,typeText,jsonParam);
                     break;
                 }
                 case "bool": {
-                    addJsonRetrieval(template, component);
-                    template.addTextSegment(".toLowerCase() == 'true'");
+                    lineScript=String.format(boolScript,jsonParam,typeText,param,jsonParam,param,jsonParam);
                     break;
                 }
                 case "": //var
                 case "String": {
-                    addJsonRetrieval(template, component);
+//                    addJsonRetrieval(template, component);
+                    lineScript=String.format(scriptScript,param,jsonParam);
                     break;
                 }
                 default:
-                    template.addTextSegment(typeText);
-                    template.addTextSegment(".fromJson(");
-                    addJsonRetrieval(template, component);
-                    template.addTextSegment(")");
+//                    template.addTextSegment(typeText);
+//                    template.addTextSegment(".fromJson(");
+//                    addJsonRetrieval(template, component);
+//                    template.addTextSegment(")");
+                    lineScript=String.format(otherType,param,typeText,jsonParam);
+                    break;
 
             }
-            template.addTextSegment(",");
+            template.addTextSegment(lineScript);
+            template.addTextSegment("}");
         }
-        template.addTextSegment(");");
+        template.addTextSegment(String.format("return %s;",classParamName));
         template.addTextSegment("}\n");
 
         template.addEndVariable();
@@ -105,38 +121,53 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
         return template;
     }
 
-    private void addCollection(Template template, DartComponent component, String typeText) {
+
+
+    private void addCollection(Template template, DartComponent component, String typeText, String paramName, String jsonParamName) {
         int genericBracketIndex = typeText.indexOf("<");
         String collectionType = genericBracketIndex == -1 ? typeText : typeText.substring(0, genericBracketIndex);
         String genericType = genericBracketIndex == -1 ? "" : typeText.substring(genericBracketIndex + 1, typeText.lastIndexOf(">"));
-        template.addTextSegment(collectionType);
-        template.addTextSegment(".of(");
-        addJsonRetrieval(template, component);
-        template.addTextSegment(").map((i) => ");
+//        template.addTextSegment(collectionType);
+//        template.addTextSegment(".of(");
+//        addJsonRetrieval(template, component);
+//        template.addTextSegment(").map((i) => ");
 
+        String scriptTemplate="%s = %s.of(%s).map((i){if(i==null){return null;}else{ %s}}).to%s();";
+        String valueTemplate="  if (i == null) {\n" +
+                "          return null;\n" +
+                "        }\n" +
+                "        if(i is %s){\n" +
+                "          return i;\n" +
+                "        }else{\n" +
+                "          return %s;\n" +
+                "        }";
+        String realValueTemplate=null;
         switch (genericType) {
             case "int":
             case "double":
             case "DateTime": {
-                template.addTextSegment(genericType);
-                template.addTextSegment(".parse(i)");
+//                template.addTextSegment(genericType);
+//                template.addTextSegment(".parse(i)");
+                realValueTemplate=String.format("%s.parse(i)",genericType);
                 break;
             }
             case "bool": {
-                template.addTextSegment("i.toLowerCase() == 'true'");
-                break;
-            }
-            case "String": {
-                addJsonRetrieval(template, component);
+//                template.addTextSegment("i.toLowerCase() == 'true'");
+                realValueTemplate="i.toLowerCase() == 'true'";
                 break;
             }
             case "":
+            case "String": {
+                realValueTemplate="i";
+                break;
+            }
             default:
-                template.addTextSegment("i /* can't generate it properly yet */");
+                realValueTemplate=String.format("%s.fromJson(i)",genericType);
+                break;
         }
-        template.addTextSegment(").to");
-        template.addTextSegment(collectionType);
-        template.addTextSegment("()");
+        String value=String.format(valueTemplate,genericType,realValueTemplate);
+        String line=String.format(scriptTemplate,paramName,collectionType,jsonParamName,value,collectionType);
+        template.addTextSegment(line);
     }
 
     /**

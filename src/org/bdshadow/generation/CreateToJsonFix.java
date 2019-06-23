@@ -41,43 +41,43 @@ public class CreateToJsonFix extends BaseCreateMethodsFix<DartComponent> {
         final Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
         template.setToReformat(true);
 
-        template.addTextSegment("Map<String, dynamic> toJson() {");
-        template.addTextSegment("return {");
-
-        for (Iterator<DartComponent> iterator = elementsToProcess.iterator(); iterator.hasNext(); ) {
-            DartComponent component = iterator.next();
-
-            template.addTextSegment("\"");
-            template.addTextSegment(component.getName());
-            template.addTextSegment("\": ");
-
-            DartReturnType returnType = PsiTreeUtil.getChildOfType(component, DartReturnType.class);
-            DartType dartType = PsiTreeUtil.getChildOfType(component, DartType.class);
-            String typeText = returnType == null ? DartPresentableUtil.buildTypeText(component, dartType, null) : DartPresentableUtil.buildTypeText(component, returnType, null);
-
-            boolean isGenericCollection = typeText.startsWith("Set") || typeText.startsWith("List");
-            if (isGenericCollection) {
-                template.addTextSegment("jsonEncode(");
-                template.addTextSegment("this.");
-                template.addTextSegment(component.getName());
-                template.addTextSegment(")");
-                template.addTextSegment(",");
-                continue;
-            }
-
-            template.addTextSegment("this.");
-            switch (typeText) {
-                case "DateTime": {
-                    template.addTextSegment(component.getName());
-                    template.addTextSegment(".toIso8601String()");
-                    break;
-                }
-                default:
-                    template.addTextSegment(component.getName());
-            }
-            template.addTextSegment(",");
-        }
-        template.addTextSegment("}");
+        template.addTextSegment("String toJSONString() {");
+        template.addTextSegment("return jsonEncode(this);");
+//
+//        for (Iterator<DartComponent> iterator = elementsToProcess.iterator(); iterator.hasNext(); ) {
+//            DartComponent component = iterator.next();
+//
+//            template.addTextSegment("\"");
+//            template.addTextSegment(component.getName());
+//            template.addTextSegment("\": ");
+//
+//            DartReturnType returnType = PsiTreeUtil.getChildOfType(component, DartReturnType.class);
+//            DartType dartType = PsiTreeUtil.getChildOfType(component, DartType.class);
+//            String typeText = returnType == null ? DartPresentableUtil.buildTypeText(component, dartType, null) : DartPresentableUtil.buildTypeText(component, returnType, null);
+//
+//            boolean isGenericCollection = typeText.startsWith("Set") || typeText.startsWith("List");
+//            if (isGenericCollection) {
+//                template.addTextSegment("jsonEncode(");
+//                template.addTextSegment("this.");
+//                template.addTextSegment(component.getName());
+//                template.addTextSegment(")");
+//                template.addTextSegment(",");
+//                continue;
+//            }
+//
+//            template.addTextSegment("this.");
+//            switch (typeText) {
+//                case "DateTime": {
+//                    template.addTextSegment(component.getName());
+//                    template.addTextSegment(".toIso8601String()");
+//                    break;
+//                }
+//                default:
+//                    template.addTextSegment(component.getName());
+//            }
+//            template.addTextSegment(",");
+//        }
+//        template.addTextSegment("}");
         template.addTextSegment("}");
         template.addEndVariable();
         template.addTextSegment(" "); // trailing space is removed when auto-reformatting, but it helps to enter line break if needed
