@@ -39,11 +39,11 @@ public class SqlField {
             if (v.length != 2) {
                 continue;
             }
-            if ("primary".equalsIgnoreCase(v[0])) {
+            if ("primary".equalsIgnoreCase(v[0].trim())) {
                 primary = parseBoolean(v[1]);
                 continue;
             }
-            if ("ai".equalsIgnoreCase(v[0])) {
+            if ("ai".equalsIgnoreCase(v[0].trim())) {
                 ai = parseBoolean(v[1]);
                 continue;
             }

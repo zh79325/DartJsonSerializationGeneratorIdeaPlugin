@@ -72,7 +72,6 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
 
             if (isGenericCollection) {
                 addCollection(template, component, typeText,param,jsonParam);
-                template.addTextSegment("}");
                 continue;
             }
 
