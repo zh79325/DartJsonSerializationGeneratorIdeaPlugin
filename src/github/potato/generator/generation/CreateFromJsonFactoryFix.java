@@ -127,7 +127,7 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
 //        addJsonRetrieval(template, component);
 //        template.addTextSegment(").map((i) => ");
 
-        String scriptTemplate="%s = %s.of(%s).map((i){return %s;).to%s();";
+        String scriptTemplate="%s = PotatoDataParser.parse%sValue(%s,(i){return %s;});";
 
         String returnValue=null;
         switch (genericType) {
@@ -154,7 +154,7 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
                 returnValue= String.format("%s.fromJson(i)",genericType);
                 break;
         }
-        String line=String.format(scriptTemplate,paramName,collectionType,jsonParamName,returnValue,collectionType);
+        String line=String.format(scriptTemplate,paramName,collectionType,jsonParamName,returnValue);
         template.addTextSegment(line);
     }
 

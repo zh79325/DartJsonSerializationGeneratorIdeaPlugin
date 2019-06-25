@@ -10,7 +10,7 @@ class PotatoDataField {
   const PotatoDataField({this.primary, this.ai});
 }
 
-class PotatoDataParser{
+class PotatoDataParser {
   static DateTime parseDateTime(dynamic value) {
     if (value == null) {
       return null;
@@ -38,6 +38,40 @@ class PotatoDataParser{
       return int.parse(value);
     }
     return 0;
+  }
+
+  static List<T> parseListValue<T, E>(dynamic value, T f(E e)) {
+    if (value == null) {
+      return null;
+    }
+    if (value is Set) {
+      return Set.of(value).map((e) {
+        return f(e);
+      }).toList();
+    }
+    if (!value is List) {
+      return null;
+    }
+    return List.of(value).map((e) {
+      return f(e);
+    }).toList();
+  }
+
+  static Set<T> parseSetValue<T, E>(dynamic value, T f(E e)) {
+    if (value == null) {
+      return null;
+    }
+    if (value is List) {
+      return List.of(value).map((e) {
+        return f(e);
+      }).toSet();
+    }
+    if (!value is Set) {
+      return null;
+    }
+    return Set.of(value).map((e) {
+      return f(e);
+    }).toSet();
   }
 
   static double parseDoubleValue(dynamic value) {
@@ -69,4 +103,3 @@ class PotatoDataParser{
     return false;
   }
 }
-

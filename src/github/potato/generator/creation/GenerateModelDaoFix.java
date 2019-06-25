@@ -151,6 +151,10 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         StringBuilder insertParamSql = new StringBuilder();
         for (int i = 0; i < fields.size(); i++) {
             DartField field = fields.get(i);
+            SqlField sqlField= field.getSqlField();
+            if(sqlField.isAi()){
+                continue;
+            }
             String templateSql = "values.add(data.%s);";
             String sql = String.format(templateSql, field.getFieldName());
             template.addTextSegment(sql);
@@ -175,9 +179,9 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         for (int i = 0; i < fields.size(); i++) {
             DartField field = fields.get(i);
             StringBuilder sb = new StringBuilder();
-            sb.append("\"");
+            sb.append("`");
             sb.append(field.getFieldName());
-            sb.append("\"");
+            sb.append("`");
             sb.append(" ");
             SqlField sqlField = field.getSqlField();
             sb.append(sqlField.getSqlType());

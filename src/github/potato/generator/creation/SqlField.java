@@ -61,7 +61,7 @@ public class SqlField {
         String v[] = text.split("\\.");
         String n = v.length == 1 ? v[0] : v[1];
         try {
-            return Boolean.parseBoolean(n);
+            return Boolean.parseBoolean(n.trim());
         } catch (Exception e) {
             return false;
         }
