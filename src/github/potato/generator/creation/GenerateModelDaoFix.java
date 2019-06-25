@@ -16,6 +16,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.jetbrains.lang.dart.psi.*;
 import com.jetbrains.lang.dart.util.DartPresentableUtil;
+import github.potato.generator.generation.CreateFromJsonFactoryFix;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -135,6 +136,8 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
 
         buildParseFunction(template, modelClass, tableName, fields);
 
+        CreateFromJsonFactoryFix.buildFunctionsText(template,myDartClass,components);
+
         template.addTextSegment("}");
         templateManager.startTemplate(editor, template);
         templateManager.finishTemplate(editor);
@@ -143,7 +146,7 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
 
     private void buildParseFunction(Template template, String modelClass, String tableName, List<DartField> fields) {
         template.addTextSegment(" ");
-        template.addTextSegment(String.format(" %s mapToData(Map<String,dynamic> map) { ", modelClass));
+        template.addTextSegment(String.format("static %s fromDb(Map<String,dynamic> map) { ", modelClass));
         template.addTextSegment("if(map==null){return null;}");
         template.addTextSegment(String.format(" %s data=new %s();", modelClass, modelClass));
         for (int i = 0; i < fields.size(); i++) {
@@ -154,6 +157,11 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
 
         }
         template.addTextSegment("return data;");
+        template.addTextSegment("} ");
+
+
+        template.addTextSegment(String.format("%s fromDB(Map<String, dynamic> map){",modelClass));
+        template.addTextSegment("return fromDb(map);");
         template.addTextSegment("} ");
 
     }

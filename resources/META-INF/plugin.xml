@@ -31,17 +31,17 @@
     <depends>Dart</depends>
     <depends>com.intellij.modules.xml</depends>
     <actions>
-        <action id="Generate.FromJsonFactory.Dart" class="github.potato.generator.generation.GenerateDartFromJsonFactoryAction"
-                text="fromJson factory">
-            <add-to-group anchor="after" relative-to-action="Generate.EqualsAndHashcode.Dart" group-id="GenerateGroup"/>
-        </action>
-        <action id="Generate.toJson.Dart" class="github.potato.generator.generation.GenerateDartToJsonAction"
-                text="toJson()">
-            <add-to-group anchor="after" relative-to-action="Generate.FromJsonFactory.Dart" group-id="GenerateGroup"/>
-        </action>
+<!--        <action id="Generate.FromJsonFactory.Dart" class="github.potato.generator.generation.GenerateDartFromJsonFactoryAction"-->
+<!--                text="fromJson factory">-->
+<!--            <add-to-group anchor="after" relative-to-action="Generate.EqualsAndHashcode.Dart" group-id="GenerateGroup"/>-->
+<!--        </action>-->
+<!--        <action id="Generate.toJson.Dart" class="github.potato.generator.generation.GenerateDartToJsonAction"-->
+<!--                text="toJson()">-->
+<!--            <add-to-group anchor="after" relative-to-action="Generate.FromJsonFactory.Dart" group-id="GenerateGroup"/>-->
+<!--        </action>-->
         <action id="Generate.Dao.Dart" class="github.potato.generator.creation.GenerateModelDaoAction"
                 text="createDao()">
-            <add-to-group anchor="after" relative-to-action="Generate.toJson.Dart" group-id="GenerateGroup"/>
+            <add-to-group anchor="after" relative-to-action="Generate.EqualsAndHashcode.Dart" group-id="GenerateGroup"/>
         </action>
     </actions>
 

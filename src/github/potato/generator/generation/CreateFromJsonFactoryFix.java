@@ -27,8 +27,8 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
     protected void processElements(@NotNull final Project project,
                                    @NotNull final Editor editor,
                                    @NotNull final Set<DartComponent> elementsToProcess) {
-        final TemplateManager templateManager = TemplateManager.getInstance(project);
-        anchor = doAddMethodsForOne(editor, templateManager, buildFunctionsText(templateManager, elementsToProcess), anchor);
+//        final TemplateManager templateManager = TemplateManager.getInstance(project);
+//        anchor = doAddMethodsForOne(editor, templateManager, buildFunctionsText(templateManager, elementsToProcess), anchor);
     }
 
     @NotNull
@@ -39,12 +39,11 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
 
 
 
-    protected Template buildFunctionsText(TemplateManager templateManager, Set<DartComponent> elementsToProcess) {
-        final Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+    public   static Template buildFunctionsText(Template template,DartClass myDartClass, Set<DartComponent> elementsToProcess) {
         template.setToReformat(true);
-        template.addTextSegment("factory ");
-        template.addTextSegment(this.myDartClass.getName());
-        template.addTextSegment(".fromJson");
+        template.addTextSegment("static  ");
+        template.addTextSegment(myDartClass.getName());
+        template.addTextSegment(" fromJson");
         template.addTextSegment("(Map<String, dynamic> json)");
         template.addTextSegment(" {");
         template.addTextSegment("if(json==null){");
@@ -54,7 +53,7 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
 //        template.addTextSegment(this.myDartClass.getName());
 //        template.addTextSegment("(");
 
-        String className=this.myDartClass.getName();
+        String className=myDartClass.getName();
         String classParamName=className.substring(0,1).toLowerCase()+className.substring(1);
         String newElementLine=String.format("%s %s = new %s();",className,classParamName,className);
         template.addTextSegment(newElementLine);
@@ -86,7 +85,7 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
         return template;
     }
 
-    private String buildLineScript(String typeText,String param, String jsonParam) {
+    private static String buildLineScript(String typeText,String param, String jsonParam) {
         String lineScript;
         switch (typeText.toLowerCase()) {
             case "int":
@@ -117,7 +116,7 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
     }
 
 
-    private void addCollection(Template template, DartComponent component, String typeText, String paramName, String jsonParamName) {
+    private static void addCollection(Template template, DartComponent component, String typeText, String paramName, String jsonParamName) {
         int genericBracketIndex = typeText.indexOf("<");
         String collectionType = genericBracketIndex == -1 ? typeText : typeText.substring(0, genericBracketIndex);
         String genericType = genericBracketIndex == -1 ? "" : typeText.substring(genericBracketIndex + 1, typeText.lastIndexOf(">"));
