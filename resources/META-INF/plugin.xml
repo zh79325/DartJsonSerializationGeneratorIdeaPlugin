@@ -34,6 +34,10 @@
                 text="toJson()">
             <add-to-group anchor="after" relative-to-action="Generate.FromJsonFactory.Dart" group-id="GenerateGroup"/>
         </action>
+        <action id="Generate.Dao.Dart" class="org.bdshadow.creation.GenerateModelDaoAction"
+                text="createDao()">
+            <add-to-group anchor="after" relative-to-action="Generate.toJson.Dart" group-id="GenerateGroup"/>
+        </action>
     </actions>
 
 </idea-plugin>
