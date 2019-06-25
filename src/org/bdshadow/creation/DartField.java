@@ -7,31 +7,25 @@ package org.bdshadow.creation;
  */
 public class DartField {
     final String fieldName;
-    final String dartType;
-    final String sqlType;
-    final String sqlToDart;
+    final String fieldType;
+    final SqlField sqlField;
 
 
-    public DartField(String fieldName, String dartType, String sqlType, String sqlToDart) {
+    public DartField(String fieldName, String fieldType, SqlField sqlField) {
         this.fieldName = fieldName;
-        this.dartType = dartType;
-        this.sqlType = sqlType;
-        this.sqlToDart = sqlToDart;
+        this.fieldType = fieldType;
+        this.sqlField = sqlField;
     }
 
     public String getFieldName() {
         return fieldName;
     }
 
-    public String getDartType() {
-        return dartType;
+    public String getFieldType() {
+        return fieldType;
     }
 
-    public String getSqlType() {
-        return sqlType;
-    }
-
-    public String getSqlToDart() {
-        return sqlToDart;
+    public SqlField getSqlField() {
+        return sqlField;
     }
 }

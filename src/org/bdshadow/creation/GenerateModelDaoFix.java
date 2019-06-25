@@ -128,12 +128,12 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
 
     private void buildParseFunction(Template template, String modelClass, String tableName, List<DartField> fields) {
         template.addTextSegment(" ");
-        template.addTextSegment(String.format(" %s mapToData(Map<String,dynamic> map) { ",modelClass));
-        template.addTextSegment(String.format(" %s data=new %s();",modelClass,modelClass));
+        template.addTextSegment(String.format(" %s mapToData(Map<String,dynamic> map) { ", modelClass));
+        template.addTextSegment(String.format(" %s data=new %s();", modelClass, modelClass));
         for (int i = 0; i < fields.size(); i++) {
             DartField field = fields.get(i);
             String templateSql = "data.%s = %s;";
-            String sql = String.format(templateSql, field.getFieldName(),field.getSqlToDart());
+            String sql = String.format(templateSql, field.getFieldName(), field.getSqlField().getSqlToDart());
             template.addTextSegment(sql);
 
         }
@@ -144,7 +144,7 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
 
     private void buildInsertFunction(Template template, String modelClass, String tableName, List<DartField> fields) {
         template.addTextSegment(" ");
-        template.addTextSegment(String.format(" Future<int> insert(%s data) async{ ",modelClass));
+        template.addTextSegment(String.format(" Future<int> insert(%s data) async{ ", modelClass));
         template.addTextSegment("List<dynamic> values = List();");
         StringBuilder insertFiledSql = new StringBuilder();
         StringBuilder insertParamSql = new StringBuilder();
@@ -178,7 +178,8 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
                 templateSql += ",";
             }
             templateSql += "\";";
-            String sql = String.format(templateSql, field.getFieldName(), field.getSqlType());
+            SqlField sqlField = field.getSqlField();
+            String sql = String.format(templateSql, field.getFieldName(), sqlField.buildSqlType());
             template.addTextSegment(sql);
         }
         template.addTextSegment(" template+= \")\";");
@@ -191,41 +192,63 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         for (DartComponent component : components) {
             String fieldName = component.getName();
             DartReturnType returnType = PsiTreeUtil.getChildOfType(component, DartReturnType.class);
+            DartMetadata metadata = PsiTreeUtil.getChildOfType(component, DartMetadata.class);
             DartType dartType = PsiTreeUtil.getChildOfType(component, DartType.class);
-            String typeText = returnType == null ? DartPresentableUtil.buildTypeText(component, dartType, null) : DartPresentableUtil.buildTypeText(component, returnType, null);
-            boolean isGenericCollection = typeText.startsWith("Set") || typeText.startsWith("List");
+            String fieldType = returnType == null ? DartPresentableUtil.buildTypeText(component, dartType, null) : DartPresentableUtil.buildTypeText(component, returnType, null);
+            boolean isGenericCollection = fieldType.startsWith("Set") || fieldType.startsWith("List");
             if (isGenericCollection) {
                 continue;
             }
-            String fieldType = null;
-            String sqlToDart = null;
-            switch (typeText) {
-                case "double":
-                    fieldType = "DOUBLE";
-                    sqlToDart = "map[\""+fieldName+"\"]";
-                    break;
-                case "DateTime": {
-                    fieldType = "DATETIME";
-                    sqlToDart ="map[\""+fieldName+"\"]";
-                    break;
-                }
-                case "int":
-                    fieldType = "INTEGER";
-                    sqlToDart = "map[\""+fieldName+"\"]";
-                    break;
-                case "bool": {
-                    fieldType = "INTEGER";
-                    sqlToDart = "map[\""+fieldName+"\"]"+"==null?false:"+"map[\""+fieldName+"\"]"+"==0";
-                    break;
-                }
-                case "String":
-                    sqlToDart = "map[\""+fieldName+"\"]";;
-                    fieldType = "VARCHAR(255)";
-                    break;
-                default:
-                    continue;
+
+            SqlField sqlField = null;
+            if (metadata != null) {
+                String text = metadata.getText();
+                sqlField = SqlField.parse(fieldName,fieldType, text);
             }
-            DartField dartField = new DartField(fieldName, typeText, fieldType, sqlToDart);
+            if (sqlField == null) {
+                String sqlType = null;
+                String sqlToDart = null;
+                sqlField = new SqlField();
+                int length = 0;
+                switch (fieldType) {
+                    case "double":
+                        sqlType = "DOUBLE";
+                        sqlToDart = "map[\"" + fieldName + "\"]";
+                        length = 0;
+                        break;
+                    case "DateTime": {
+                        sqlType = "DATETIME";
+                        length = 0;
+                        sqlToDart = "map[\"" + fieldName + "\"]";
+                        break;
+                    }
+                    case "int":
+                        sqlType = "INTEGER";
+                        sqlToDart = "map[\"" + fieldName + "\"]";
+                        length = 20;
+                        break;
+                    case "bool": {
+                        sqlType = "INTEGER";
+                        length = 1;
+                        sqlToDart = "map[\"" + fieldName + "\"]" + "==null?false:" + "map[\"" + fieldName + "\"]" + "==0";
+                        break;
+                    }
+                    case "String":
+                        sqlToDart = "map[\"" + fieldName + "\"]";
+                        sqlType = "VARCHAR";
+                        length = 255;
+                        break;
+                    default:
+                        continue;
+                }
+                sqlField.setType(sqlType);
+                sqlField.setLength(length);
+                sqlField.setSqlToDart(sqlToDart);
+            }
+            if (sqlField == null) {
+                continue;
+            }
+            DartField dartField = new DartField(fieldName, fieldType, sqlField);
             dartFieldList.add(dartField);
         }
         return dartFieldList;
