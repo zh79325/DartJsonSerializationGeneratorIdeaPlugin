@@ -106,6 +106,7 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         Template headTemplate = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
         headTemplate.setToReformat(false);
         headTemplate.addTextSegment("import 'package:sqflite/sqlite_api.dart';");
+        headTemplate.addTextSegment("\n");
         headTemplate.addTextSegment("import 'package:potato_helper/potato_helper.dart';");
         headTemplate.addTextSegment("\n");
         headTemplate.addTextSegment(String.format("import '%s.dart';", modelClass));
