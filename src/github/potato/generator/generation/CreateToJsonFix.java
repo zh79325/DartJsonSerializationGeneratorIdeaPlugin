@@ -1,20 +1,15 @@
-package org.bdshadow.generation;
+package github.potato.generator.generation;
 
 import com.intellij.codeInsight.template.Template;
 import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.util.PsiTreeUtil;
 import com.jetbrains.lang.dart.ide.generation.BaseCreateMethodsFix;
 import com.jetbrains.lang.dart.psi.DartClass;
 import com.jetbrains.lang.dart.psi.DartComponent;
-import com.jetbrains.lang.dart.psi.DartReturnType;
-import com.jetbrains.lang.dart.psi.DartType;
-import com.jetbrains.lang.dart.util.DartPresentableUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Iterator;
 import java.util.Set;
 
 public class CreateToJsonFix extends BaseCreateMethodsFix<DartComponent> {

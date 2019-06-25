@@ -1,4 +1,4 @@
-package org.bdshadow.creation;
+package github.potato.generator.creation;
 import com.intellij.codeInsight.FileModificationService;
 import com.intellij.codeInsight.hint.HintManager;
 import com.intellij.codeInsight.template.Template;

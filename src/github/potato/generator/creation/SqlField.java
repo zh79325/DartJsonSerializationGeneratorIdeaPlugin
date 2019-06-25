@@ -1,4 +1,4 @@
-package org.bdshadow.creation;
+package github.potato.generator.creation;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -11,69 +11,59 @@ import java.util.regex.Pattern;
  * Copyright [2019] [zh_zhou]
  */
 public class SqlField {
-    String type;
+
+    boolean primary = false;
+    boolean ai = false;
     String sqlToDart;
-    int length;
+    String sqlType;
+
+
 
     static Pattern pattern = Pattern.compile("@(.+?)\\((.+?)\\)");
 
-    public static SqlField parse(String fieldName, String fieldType, String text) {
+    public static SqlField parse(String text) {
         Matcher matcher = pattern.matcher(text);
         if (!matcher.find()) {
             return null;
         }
         String p1 = matcher.group(1);
         String p2 = matcher.group(2);
-        if (!StringUtils.equalsIgnoreCase("DataField", p1)) {
+        if (!StringUtils.equalsIgnoreCase("PotatoDataField", p1)) {
             return null;
         }
         String[] p2List = p2.split(",");
-        String type = null;
-        int length = 0;
+        boolean primary = false;
+        boolean ai = false;
         for (String p : p2List) {
             String[] v = p.split(":");
             if (v.length != 2) {
                 continue;
             }
-            if ("type".equalsIgnoreCase(v[0])) {
-                type = parseType(v[1]);
+            if ("primary".equalsIgnoreCase(v[0])) {
+                primary = parseBoolean(v[1]);
                 continue;
             }
-            if ("length".equalsIgnoreCase(v[0])) {
-                length = parseLength(v[1]);
+            if ("ai".equalsIgnoreCase(v[0])) {
+                ai = parseBoolean(v[1]);
                 continue;
             }
-        }
-        if (StringUtils.isEmpty(type) && length <= 0) {
-            return null;
-        }
-        if (StringUtils.isEmpty(type)) {
-            type = fieldType;
         }
         SqlField sqlField = new SqlField();
-        sqlField.setLength(length);
-        sqlField.setType(type);
-        switch (type.toLowerCase()) {
-            case "text":
-            case "string":
-                sqlField.setSqlToDart("map[\"" + fieldName + "\"]");
-                break;
-            default:
-                return null;
-        }
+        sqlField.setAi(ai);
+        sqlField.setPrimary(primary);
         return sqlField;
     }
 
-    private static int parseLength(String text) {
+    private static boolean parseBoolean(String text) {
         if (StringUtils.isEmpty(text)) {
-            return 0;
+            return false;
         }
         String v[] = text.split("\\.");
         String n = v.length == 1 ? v[0] : v[1];
         try {
-            return Integer.parseInt(n);
+            return Boolean.parseBoolean(n);
         } catch (Exception e) {
-            return 0;
+            return false;
         }
     }
 
@@ -93,27 +83,35 @@ public class SqlField {
         this.sqlToDart = sqlToDart;
     }
 
-    public String getType() {
-        return type;
+    public boolean isPrimary() {
+        return primary;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setPrimary(boolean primary) {
+        this.primary = primary;
     }
 
-    public int getLength() {
-        return length;
+    public boolean isAi() {
+        return ai;
     }
 
-    public void setLength(int length) {
-        this.length = length;
+    public void setAi(boolean ai) {
+        this.ai = ai;
     }
 
-    public String buildSqlType() {
-        if (length > 0) {
-            return type + "(" + length + ")";
-        } else {
-            return type;
-        }
+    public String getSqlType() {
+        return sqlType;
+    }
+
+    public void setSqlType(String sqlType) {
+        this.sqlType = sqlType;
+    }
+
+    public static Pattern getPattern() {
+        return pattern;
+    }
+
+    public static void setPattern(Pattern pattern) {
+        SqlField.pattern = pattern;
     }
 }

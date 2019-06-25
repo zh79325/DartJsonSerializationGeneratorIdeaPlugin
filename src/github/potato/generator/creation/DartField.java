@@ -1,4 +1,4 @@
-package org.bdshadow.creation;
+package github.potato.generator.creation;
 
 /**
  * @author zh_zhou

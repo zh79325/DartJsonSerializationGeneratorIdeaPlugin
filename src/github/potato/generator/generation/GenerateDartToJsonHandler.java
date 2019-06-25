@@ -1,37 +1,32 @@
-package org.bdshadow.creation;
+package github.potato.generator.generation;
 
 import com.intellij.util.containers.ContainerUtil;
 import com.jetbrains.lang.dart.DartComponentType;
 import com.jetbrains.lang.dart.ide.generation.BaseCreateMethodsFix;
+import com.jetbrains.lang.dart.ide.generation.BaseDartGenerateHandler;
 import com.jetbrains.lang.dart.psi.DartClass;
 import com.jetbrains.lang.dart.psi.DartComponent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/**
- * @author zh_zhou
- * created at 2019/06/24 22:43
- * Copyright [2019] [zh_zhou]
- */
-public class GenerateModelDaoHandler extends BaseDartCreateHandler {
-
+public class GenerateDartToJsonHandler extends BaseDartGenerateHandler {
     @NotNull
     @Override
-    protected BaseCreateFileFix createFix(@NotNull DartClass dartClass) {
-        return new GenerateModelDaoFix(dartClass);
+    protected BaseCreateMethodsFix createFix(@NotNull DartClass dartClass) {
+        return new CreateToJsonFix(dartClass);
     }
 
     @NotNull
     @Override
     protected String getTitle() {
-        return "createDao";
+        return "toJson()";
     }
 
     @Override
     protected void collectCandidates(@NotNull DartClass dartClass, @NotNull List<DartComponent> candidates) {
         candidates.addAll(ContainerUtil.findAll(computeClassMembersMap(dartClass, false).values(),
-                component -> DartComponentType.typeOf(component) == DartComponentType.FIELD));
+            component -> DartComponentType.typeOf(component) == DartComponentType.FIELD));
     }
 
     @Override

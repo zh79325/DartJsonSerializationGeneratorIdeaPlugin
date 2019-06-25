@@ -1,4 +1,4 @@
-package org.bdshadow.creation;
+package github.potato.generator.creation;
 
 import org.jetbrains.annotations.NotNull;
 

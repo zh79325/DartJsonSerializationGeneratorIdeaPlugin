@@ -1,4 +1,4 @@
-package org.bdshadow.generation;
+package github.potato.generator.generation;
 
 import com.jetbrains.lang.dart.ide.generation.BaseDartGenerateAction;
 import com.jetbrains.lang.dart.ide.generation.BaseDartGenerateHandler;

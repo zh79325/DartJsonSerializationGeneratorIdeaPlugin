@@ -1,4 +1,4 @@
-package org.bdshadow.generation;
+package github.potato.generator.generation;
 
 import com.intellij.codeInsight.template.Template;
 import com.intellij.codeInsight.template.TemplateManager;
@@ -16,8 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.Set;
-
-import static org.yaml.snakeyaml.nodes.NodeId.anchor;
 
 public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent> {
 
@@ -39,10 +37,11 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
         return ""; // can't be called actually because processElements() is overridden
     }
 
+
+
     protected Template buildFunctionsText(TemplateManager templateManager, Set<DartComponent> elementsToProcess) {
         final Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
         template.setToReformat(true);
-
         template.addTextSegment("factory ");
         template.addTextSegment(this.myDartClass.getName());
         template.addTextSegment(".fromJson");
@@ -64,18 +63,12 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
             String fieldName=component.getName();
             String param=String.format("%s.%s",classParamName,fieldName);
             String jsonParam=String.format("json[\"%s\"]",fieldName);
-            String scriptScript="%s = %s;";
-            String normalScript="if(%s is %s){\n%s = %s;\n}else{\n%s = %s.parse(%s);\n}";
-            String boolScript="if(%s is %s){%s = %s;}else{%s = %s.toLowerCase() == 'true';}";
-            String otherType="%s = %s.fromJson(%s);";
             DartReturnType returnType = PsiTreeUtil.getChildOfType(component, DartReturnType.class);
             DartType dartType = PsiTreeUtil.getChildOfType(component, DartType.class);
             String typeText = returnType == null ? DartPresentableUtil.buildTypeText(component, dartType, null) : DartPresentableUtil.buildTypeText(component, returnType, null);
 
             boolean isGenericCollection = typeText.startsWith("Set") || typeText.startsWith("List");
 
-            String nullCheckParam=String.format("if(%s == null){%s=null;}else{",jsonParam,param);
-            template.addTextSegment(nullCheckParam);
 
             if (isGenericCollection) {
                 addCollection(template, component, typeText,param,jsonParam);
@@ -83,35 +76,8 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
                 continue;
             }
 
-            String lineScript=null;
-            switch (typeText) {
-                case "int":
-                case "double":
-                case "DateTime": {
-                    lineScript=String.format(normalScript,jsonParam,typeText,param,jsonParam,param,typeText,jsonParam);
-                    break;
-                }
-                case "bool": {
-                    lineScript=String.format(boolScript,jsonParam,typeText,param,jsonParam,param,jsonParam);
-                    break;
-                }
-                case "": //var
-                case "String": {
-//                    addJsonRetrieval(template, component);
-                    lineScript=String.format(scriptScript,param,jsonParam);
-                    break;
-                }
-                default:
-//                    template.addTextSegment(typeText);
-//                    template.addTextSegment(".fromJson(");
-//                    addJsonRetrieval(template, component);
-//                    template.addTextSegment(")");
-                    lineScript=String.format(otherType,param,typeText,jsonParam);
-                    break;
-
-            }
+            String lineScript = buildLineScript(typeText,param, jsonParam);
             template.addTextSegment(lineScript);
-            template.addTextSegment("}");
         }
         template.addTextSegment(String.format("return %s;",classParamName));
         template.addTextSegment("}\n");
@@ -121,6 +87,35 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
         return template;
     }
 
+    private String buildLineScript(String typeText,String param, String jsonParam) {
+        String lineScript;
+        switch (typeText.toLowerCase()) {
+            case "int":
+                lineScript=String.format("%s = PotatoDataParser.parseIntValue(%s);",param,jsonParam);
+                break;
+            case "double":
+                lineScript=String.format("%s = PotatoDataParser.parseDoubleValue(%s);",param,jsonParam);
+                break;
+            case "datetime": {
+                lineScript=String.format("%s = PotatoDataParser.parseDateTime(%s);",param,jsonParam);
+                break;
+            }
+            case "bool": {
+                lineScript=String.format("%s = PotatoDataParser.parseBool(%s);",param,jsonParam);
+                break;
+            }
+            case "":
+            case "string": {
+                lineScript=String.format("%s = %s;",param,jsonParam);
+                break;
+            }
+            default:
+                lineScript=String.format("%s = %s.fromJson(%s);",param,typeText,jsonParam);
+                break;
+
+        }
+        return lineScript;
+    }
 
 
     private void addCollection(Template template, DartComponent component, String typeText, String paramName, String jsonParamName) {
@@ -132,41 +127,34 @@ public class CreateFromJsonFactoryFix extends BaseCreateMethodsFix<DartComponent
 //        addJsonRetrieval(template, component);
 //        template.addTextSegment(").map((i) => ");
 
-        String scriptTemplate="%s = %s.of(%s).map((i){if(i==null){return null;}else{ %s}}).to%s();";
-        String valueTemplate="  if (i == null) {\n" +
-                "          return null;\n" +
-                "        }\n" +
-                "        if(i is %s){\n" +
-                "          return i;\n" +
-                "        }else{\n" +
-                "          return %s;\n" +
-                "        }";
-        String realValueTemplate=null;
+        String scriptTemplate="%s = %s.of(%s).map((i){return %s;).to%s();";
+
+        String returnValue=null;
         switch (genericType) {
             case "int":
+                returnValue= "PotatoDataParser.parseIntValue(i)";
+                break;
             case "double":
+                returnValue= "PotatoDataParser.parseDoubleValue(i)";
+                break;
             case "DateTime": {
-//                template.addTextSegment(genericType);
-//                template.addTextSegment(".parse(i)");
-                realValueTemplate=String.format("%s.parse(i)",genericType);
+                returnValue= "PotatoDataParser.parseDateTime(i)";
                 break;
             }
             case "bool": {
-//                template.addTextSegment("i.toLowerCase() == 'true'");
-                realValueTemplate="i.toLowerCase() == 'true'";
+                returnValue= "PotatoDataParser.parseBool(i)";
                 break;
             }
             case "":
             case "String": {
-                realValueTemplate="i";
+                returnValue= "i";
                 break;
             }
             default:
-                realValueTemplate=String.format("%s.fromJson(i)",genericType);
+                returnValue= String.format("%s.fromJson(i)",genericType);
                 break;
         }
-        String value=String.format(valueTemplate,genericType,realValueTemplate);
-        String line=String.format(scriptTemplate,paramName,collectionType,jsonParamName,value,collectionType);
+        String line=String.format(scriptTemplate,paramName,collectionType,jsonParamName,returnValue,collectionType);
         template.addTextSegment(line);
     }
 

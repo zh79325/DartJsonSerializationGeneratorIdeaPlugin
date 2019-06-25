@@ -1,4 +1,4 @@
-package org.bdshadow.generation;
+package github.potato.generator.generation;
 
 import java.util.List;
 
