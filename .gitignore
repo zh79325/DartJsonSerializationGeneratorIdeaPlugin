@@ -1,3 +1,5 @@
 DartJsonSerializationGeneratorIdeaPlugin.jar
 DartJsonSerializationGeneratorIdeaPlugin.zip
 .idea/sonarlint
+out/
+PotatoIdeaDataGenerator.jar
