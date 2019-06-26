@@ -49,12 +49,12 @@ class PotatoDataParser {
         return f(e);
       }).toList();
     }
-    if (!value is List) {
-      return null;
+    if (value is List) {
+      return List.of(value).map((e) {
+        return f(e);
+      }).toList();
     }
-    return List.of(value).map((e) {
-      return f(e);
-    }).toList();
+    return null;
   }
 
   static Set<T> parseSetValue<T, E>(dynamic value, T f(E e)) {
@@ -67,11 +67,11 @@ class PotatoDataParser {
       }).toSet();
     }
     if (!value is Set) {
-      return null;
+      return Set.of(value).map((e) {
+        return f(e);
+      }).toSet();
     }
-    return Set.of(value).map((e) {
-      return f(e);
-    }).toSet();
+    return null;
   }
 
   static double parseDoubleValue(dynamic value) {
