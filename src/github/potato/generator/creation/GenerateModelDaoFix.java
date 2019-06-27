@@ -150,7 +150,7 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
 
     private void buildParseArrayFunction(Template template, String modelClass, String tableName) {
         template.addTextSegment(" ");
-        template.addTextSegment(String.format("static List<Category> parseArray(List<Map<String, dynamic>> array) {", modelClass));
+        template.addTextSegment(String.format("static List<Category> parseArray(List<dynamic> array) {", modelClass));
         template.addTextSegment("return PotatoDataParser.parseListValue(array,(i)=>fromJson(i));");
         template.addTextSegment("} ");
     }

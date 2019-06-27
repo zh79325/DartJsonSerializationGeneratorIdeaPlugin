@@ -15,3 +15,4 @@ samples, guidance on mobile development, and a full API reference.
 
 http://www.xiladaili.com/https/
 export https_proxy="https://120.25.90.253:8118"
+export https_proxy="https://hkproxy.cn1.global.ctrip.com:8080"
