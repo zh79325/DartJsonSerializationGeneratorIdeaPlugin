@@ -15,16 +15,14 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.jetbrains.lang.dart.psi.*;
+import com.jetbrains.lang.dart.psi.impl.DartImportStatementImpl;
 import com.jetbrains.lang.dart.util.DartPresentableUtil;
 import github.potato.generator.generation.CreateFromJsonFactoryFix;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author zh_zhou
@@ -39,11 +37,15 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
     @Override
     protected void processElements(@NotNull final Project project,
                                    @NotNull final Editor editor,
-                                   @NotNull PsiFile second,
+                                   @NotNull PsiFile targetFile,
                                    @NotNull final Set<DartComponent> components) {
+
+
+        writeJSONHead(project, editor, targetFile);
+
         Properties properties = new Properties();
-        String modelFileName = second.getName();
-        PsiDirectory directory = second.getParent();
+        String modelFileName = targetFile.getName();
+        PsiDirectory directory = targetFile.getParent();
         String ext = FilenameUtils.getExtension(modelFileName);
         String modelClass = myDartClass.getName();
         String daoClass = modelClass + "Dao";
@@ -54,7 +56,7 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         PsiFile daoFile = directory.findFile(daoFileName);
         FileTemplate fileTemplate = new CustomFileTemplate("Dart", ext);
         PsiElement abstractDaoElement = null, daoElement = null;
-        if(abstractDaoFile!=null){
+        if (abstractDaoFile != null) {
             abstractDaoFile.delete();
         }
         try {
@@ -75,6 +77,213 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         }
 
 
+    }
+
+    public static <T extends PsiElement> T searchChildOfType(@Nullable PsiElement element, @NotNull Class<T> aClass) {
+        if (element == null) return null;
+        for (PsiElement child = element.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (aClass.isInstance(child)) {
+                return aClass.cast(child);
+            }
+        }
+        return null;
+    }
+
+    private void writeJSONHead(Project project, Editor editor, PsiFile targetFile) {
+
+        DartFileKeyPos keyPos = DartFileKeyPos.getKeyPos(editor, targetFile);
+        if (keyPos == null) {
+            return;
+        }
+        TemplateManager templateManager = TemplateManager.getInstance(project);
+
+        DartImportStatement jsonImport = null,potatoImport=null;
+        DartPartStatement part = null;
+        DartFactoryConstructorDeclaration fromJson = null;
+        DartMethodDeclaration construct = null, toJson = null;
+        DartMetadata jsonSerializable = null;
+        DartMetadata[] metadata = PsiTreeUtil.getChildrenOfType(myDartClass, DartMetadata.class);
+        if (metadata != null) {
+            for (DartMetadata meta : metadata) {
+
+                DartReferenceExpression expression = meta.getReferenceExpression();
+                if (expression == null) {
+                    continue;
+                }
+                String text = expression.getText();
+                if ("JsonSerializable".equals(text)) {
+                    jsonSerializable = meta;
+                    break;
+                }
+            }
+        }
+
+        if (jsonSerializable == null) {
+            int pos = DartFileKeyPos.getKeyPos(editor, targetFile).getMetaPos();
+            setOffset(editor, pos);
+            Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+            template.setToReformat(true);
+            template.addTextSegment("@JsonSerializable()\n");
+            templateManager.startTemplate(editor, template);
+            templateManager.finishTemplate(editor);
+        }
+
+        String modelClass = myDartClass.getName();
+        DartImportStatement[] importStatements = PsiTreeUtil.getChildrenOfType(targetFile, DartImportStatement.class);
+        DartImportStatement firstImport = null;
+        DartImportStatement lastImport = null;
+        if (importStatements != null && importStatements.length > 0) {
+            for (DartImportStatement statement : importStatements) {
+                if (firstImport == null) {
+                    firstImport = statement;
+                }
+                String pkgName = statement.getUriString();
+                if ("package:json_annotation/json_annotation.dart".equals(pkgName)) {
+                    jsonImport = statement;
+                    continue;
+                }
+                if("package:potato_helper/potato_helper.dart".equalsIgnoreCase(pkgName)){
+                    potatoImport=statement;
+                    continue;
+                }
+            }
+            lastImport = importStatements[importStatements.length - 1];
+        }
+        if (jsonImport == null) {
+            int pos = DartFileKeyPos.getKeyPos(editor, targetFile).getImportInsertPos();
+            setOffset(editor, pos);
+            Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+            template.setToReformat(true);
+            template.addTextSegment("import 'package:json_annotation/json_annotation.dart';\n");
+            templateManager.startTemplate(editor, template);
+            templateManager.finishTemplate(editor);
+        }
+
+        if(potatoImport==null){
+            int pos = DartFileKeyPos.getKeyPos(editor, targetFile).getImportInsertPos();
+            setOffset(editor, pos);
+            Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+            template.setToReformat(true);
+            template.addTextSegment("import 'package:potato_helper/potato_helper.dart';\n");
+            templateManager.startTemplate(editor, template);
+            templateManager.finishTemplate(editor);
+        }
+
+        String partFileName = String.format("%s.g.dart", modelClass);
+        DartPartStatement[] partStatements = PsiTreeUtil.getChildrenOfType(targetFile, DartPartStatement.class);
+        if (partStatements != null && partStatements.length > 0) {
+            for (DartPartStatement statement : partStatements) {
+                String pkgName = statement.getUriString();
+                if (partFileName.equals(pkgName)) {
+                    part = statement;
+                    break;
+                }
+            }
+        }
+
+        if (part == null) {
+            int pos = DartFileKeyPos.getKeyPos(editor, targetFile).getPartPos();
+            setOffset(editor, pos);
+            Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+            template.setToReformat(true);
+            template.addTextSegment(String.format("part '%s';\n", partFileName));
+            templateManager.startTemplate(editor, template);
+            templateManager.finishTemplate(editor);
+        }
+
+        Collection<DartVarDeclarationList> fileds = PsiTreeUtil.findChildrenOfType(myDartClass, DartVarDeclarationList.class);
+        Collection<DartMethodDeclaration> functions = PsiTreeUtil.findChildrenOfType(myDartClass, DartMethodDeclaration.class);
+        Collection<DartFactoryConstructorDeclaration> factoryConstructorDeclaration = PsiTreeUtil.findChildrenOfType(myDartClass, DartFactoryConstructorDeclaration.class);
+        if (factoryConstructorDeclaration != null) {
+            for (DartFactoryConstructorDeclaration declaration : factoryConstructorDeclaration) {
+                if ("fromJson".equals(declaration.getName())) {
+                    fromJson = declaration;
+                    break;
+                }
+            }
+        }
+        DartVarDeclarationList lastField = null;
+        if (fileds != null) {
+            List<DartVarDeclarationList> fList = new ArrayList<>(fileds);
+            lastField = fList.get(fList.size() - 1);
+        }
+        DartMethodDeclaration firstMethod = null;
+        DartMethodDeclaration lastMethod = null;
+        if (functions != null && functions.size() > 0) {
+            List<DartMethodDeclaration> fList = new ArrayList<>(functions);
+            for (DartMethodDeclaration function : fList) {
+                if (firstMethod == null) {
+                    firstMethod = function;
+                }
+                String name = function.getName();
+                if (modelClass.equals(name)) {
+                    construct = function;
+                }
+                if ("toJson".equals(name)) {
+                    toJson = function;
+                }
+            }
+            lastMethod = fList.get(fList.size() - 1);
+        }
+
+        //write construct
+        if (construct == null) {
+            int pos = DartFileKeyPos.getKeyPos(editor, targetFile).getConstructPos();
+            setOffset(editor, pos);
+            Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+            template.setToReformat(true);
+            template.addTextSegment(String.format("%s();\n", modelClass));
+            templateManager.startTemplate(editor, template);
+            templateManager.finishTemplate(editor);
+        }
+        if (fromJson == null) {
+            int pos = DartFileKeyPos.getKeyPos(editor, targetFile).getOtherFunctionPos();
+            setOffset(editor, pos);
+            Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+            template.setToReformat(true);
+            template.addTextSegment(String.format("factory %s.fromJson(Map<String, dynamic> json) => _$%sFromJson(json);\n", modelClass, modelClass));
+            templateManager.startTemplate(editor, template);
+            templateManager.finishTemplate(editor);
+        }
+        if (toJson == null) {
+            int pos = DartFileKeyPos.getKeyPos(editor, targetFile).getOtherFunctionPos();
+            setOffset(editor, pos);
+            Template template = templateManager.createTemplate(getClass().getName(), DART_TEMPLATE_GROUP);
+            template.setToReformat(true);
+            template.addTextSegment(String.format("Map<String, dynamic> toJson() => _$%sToJson(this);\n", modelClass, modelClass));
+            templateManager.startTemplate(editor, template);
+            templateManager.finishTemplate(editor);
+        }
+
+        PsiDirectory directory = targetFile.getParent();
+        PsiFile abstractDaoFile = directory.findFile(partFileName);
+        if (abstractDaoFile == null) {
+            FileTemplate fileTemplate = new CustomFileTemplate("Dart", "dart");
+            try {
+                FileTemplateUtil.createFromTemplate(fileTemplate, FilenameUtils.getBaseName(partFileName), new Properties(), directory);
+            } catch (Exception e) {
+                HintManager.getInstance().showErrorHint(editor, "create " + partFileName + " file failed ");
+            }
+        }
+    }
+
+    private void printChildren(String parent, PsiElement targetFile) {
+        if (targetFile == null) {
+            return;
+        }
+        if (targetFile.getChildren() == null) {
+            return;
+        }
+        parent += "/" + targetFile.getNode().getElementType().toString();
+        parent = "." + parent;
+        for (PsiElement child : targetFile.getChildren()) {
+            System.out.println("++++++++++++++++++++++++++++");
+            System.out.println(parent + "/" + child.getNode().getElementType().toString());
+            System.out.println(child.getText());
+            System.out.println("++++++++++++++++++++++++++++++");
+            printChildren(parent, child);
+
+        }
     }
 
     private void writeDaoClassFile(@NotNull Project project, PsiElement file, String modelClass, String abstractDaoClass, String daoClass) {
@@ -138,9 +347,9 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
 
         buildParseFunction(template, modelClass, tableName, fields);
 
-        CreateFromJsonFactoryFix.buildFunctionsText(template,myDartClass,components);
+//        CreateFromJsonFactoryFix.buildFunctionsText(template, myDartClass, components);
 
-        buildParseArrayFunction(template, modelClass, tableName);
+//        buildParseArrayFunction(template, modelClass, tableName);
 
         template.addTextSegment("}");
         templateManager.startTemplate(editor, template);
@@ -171,7 +380,7 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         template.addTextSegment("} ");
 
 
-        template.addTextSegment(String.format("%s fromDB(Map<String, dynamic> map){",modelClass));
+        template.addTextSegment(String.format("%s fromDB(Map<String, dynamic> map){", modelClass));
         template.addTextSegment("return fromDb(map);");
         template.addTextSegment("} ");
 
@@ -185,8 +394,8 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         StringBuilder insertParamSql = new StringBuilder();
         for (int i = 0; i < fields.size(); i++) {
             DartField field = fields.get(i);
-            SqlField sqlField= field.getSqlField();
-            if(sqlField.isAi()){
+            SqlField sqlField = field.getSqlField();
+            if (sqlField.isAi()) {
                 continue;
             }
             String templateSql = "values.add(data.%s);";
@@ -242,20 +451,35 @@ public class GenerateModelDaoFix extends BaseCreateFileFix<DartComponent> {
         for (DartComponent component : components) {
             String fieldName = component.getName();
             DartReturnType returnType = PsiTreeUtil.getChildOfType(component, DartReturnType.class);
-            DartMetadata metadata = PsiTreeUtil.getChildOfType(component, DartMetadata.class);
             DartType dartType = PsiTreeUtil.getChildOfType(component, DartType.class);
             String fieldType = returnType == null ? DartPresentableUtil.buildTypeText(component, dartType, null) : DartPresentableUtil.buildTypeText(component, returnType, null);
             boolean isGenericCollection = fieldType.startsWith("Set") || fieldType.startsWith("List");
             if (isGenericCollection) {
                 continue;
             }
+            DartMetadata[] metadatas = PsiTreeUtil.getChildrenOfType(component, DartMetadata.class);
             SqlField sqlField = null;
-            if (metadata != null) {
-                String text = metadata.getText();
-                sqlField = SqlField.parse(text);
+            if (metadatas != null) {
+                for (DartMetadata metadata : metadatas) {
+                    DartReferenceExpression expression= metadata.getReferenceExpression();
+                    if(expression==null){
+                        continue;
+                    }
+                    String text=expression.getText();
+                    if("PotatoDataField".equals(text)){
+                        sqlField = SqlField.parse(metadata);
+                    }
+                    if(sqlField!=null){
+                        break;
+                    }
+                }
+
             }
             if (sqlField == null) {
                 sqlField = new SqlField();
+            }
+            if(sqlField.getSkip()){
+                continue;
             }
             String sqlType = null;
             String sqlToDart = null;

@@ -1,6 +1,6 @@
 name: potato_helper
 description: Flutter package work with PotatoIdeaDataPlugin to generate code for sqlight and JSON parse.
-version: 0.0.2
+version: 0.0.3
 author: Potato<zh79325@163.com>
 homepage: https://github.com/zh79325/DartJsonSerializationGeneratorIdeaPlugin
 

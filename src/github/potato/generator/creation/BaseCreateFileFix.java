@@ -70,6 +70,10 @@ public abstract class BaseCreateFileFix <T extends DartComponent> {
         }
     }
 
+    public void setOffset(Editor editor, int offset) {
+        editor.getCaretModel().moveToOffset(offset);
+    }
+
     /**
      * must be called not in write action
      */

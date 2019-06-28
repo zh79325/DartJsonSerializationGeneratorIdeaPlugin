@@ -1,7 +1,10 @@
 package github.potato.generator.creation;
 
+import com.intellij.psi.util.PsiTreeUtil;
+import com.jetbrains.lang.dart.psi.*;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,64 +19,44 @@ public class SqlField {
     boolean ai = false;
     String sqlToDart;
     String sqlType;
+    private boolean skip;
 
+    public static SqlField parse(DartMetadata meta) {
 
-
-    static Pattern pattern = Pattern.compile("@(.+?)\\((.+?)\\)");
-
-    public static SqlField parse(String text) {
-        Matcher matcher = pattern.matcher(text);
-        if (!matcher.find()) {
-            return null;
-        }
-        String p1 = matcher.group(1);
-        String p2 = matcher.group(2);
-        if (!StringUtils.equalsIgnoreCase("PotatoDataField", p1)) {
-            return null;
-        }
-        String[] p2List = p2.split(",");
-        boolean primary = false;
-        boolean ai = false;
-        for (String p : p2List) {
-            String[] v = p.split(":");
-            if (v.length != 2) {
-                continue;
-            }
-            if ("primary".equalsIgnoreCase(v[0].trim())) {
-                primary = parseBoolean(v[1]);
-                continue;
-            }
-            if ("ai".equalsIgnoreCase(v[0].trim())) {
-                ai = parseBoolean(v[1]);
-                continue;
-            }
-        }
+        Collection<DartNamedArgument> arguments = PsiTreeUtil.findChildrenOfType(meta, DartNamedArgument.class);
         SqlField sqlField = new SqlField();
-        sqlField.setAi(ai);
-        sqlField.setPrimary(primary);
+
+        for (DartNamedArgument argument : arguments) {
+            DartParameterNameReferenceExpression name = PsiTreeUtil.getChildOfType(argument, DartParameterNameReferenceExpression.class);
+            DartLiteralExpression value = PsiTreeUtil.getChildOfType(argument, DartLiteralExpression.class);
+            if (name == null && value == null) {
+                continue;
+            }
+            String nameText = name.getText();
+            String valueText = value.getText();
+            if("primary".equals(nameText)){
+                sqlField.setPrimary(parseBoolean(valueText));
+            }else if("ai".equalsIgnoreCase(nameText)){
+                sqlField.setAi(parseBoolean(valueText));
+            }
+            else if("skip".equalsIgnoreCase(nameText)){
+                sqlField.setSkip(parseBoolean(valueText));
+            }
+        }
         return sqlField;
     }
 
-    private static boolean parseBoolean(String text) {
-        if (StringUtils.isEmpty(text)) {
+    private static boolean parseBoolean(String v) {
+        if (StringUtils.isEmpty(v)) {
             return false;
         }
-        String v[] = text.split("\\.");
-        String n = v.length == 1 ? v[0] : v[1];
         try {
-            return Boolean.parseBoolean(n.trim());
+            return Boolean.parseBoolean(v);
         } catch (Exception e) {
             return false;
         }
     }
 
-    private static String parseType(String text) {
-        if (StringUtils.isEmpty(text)) {
-            return "";
-        }
-        String v[] = text.split("\\.");
-        return v.length == 1 ? v[0] : v[1];
-    }
 
     public String getSqlToDart() {
         return sqlToDart;
@@ -107,11 +90,12 @@ public class SqlField {
         this.sqlType = sqlType;
     }
 
-    public static Pattern getPattern() {
-        return pattern;
+
+    public void setSkip(boolean skip) {
+        this.skip = skip;
     }
 
-    public static void setPattern(Pattern pattern) {
-        SqlField.pattern = pattern;
+    public boolean getSkip() {
+        return skip;
     }
 }

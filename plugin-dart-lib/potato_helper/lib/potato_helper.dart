@@ -7,7 +7,9 @@ class PotatoDataField {
   /// AUTO INCREASEMENT
   final bool ai;
 
-  const PotatoDataField({this.primary, this.ai});
+  final bool skip;
+
+  const PotatoDataField({this.primary, this.ai,this.skip});
 }
 
 class PotatoDataParser {
